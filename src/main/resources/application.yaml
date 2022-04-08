@@ -1,0 +1,10 @@
+server:
+  port: 5000
+  servlet:
+    context-path: /api
+
+spring:
+  data:
+    mongodb:
+      uri: mongodb+srv://spring-user:YdLsDuHDsb1Geo3a@cloud.rz12o.mongodb.net/cloud?retryWrites=true&w=majority
+      auto-index-creation: true
