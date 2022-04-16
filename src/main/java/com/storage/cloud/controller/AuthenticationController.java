@@ -2,6 +2,7 @@ package com.storage.cloud.controller;
 
 import com.storage.cloud.domain.User;
 import com.storage.cloud.dto.UserAuthDto;
+import com.storage.cloud.dto.UserDto;
 import com.storage.cloud.security.JwtUtil;
 import com.storage.cloud.service.UserAuthenticationService;
 import com.storage.cloud.service.UserService;
@@ -11,11 +12,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.Optional;
 
 @RestController
@@ -58,9 +61,51 @@ public class AuthenticationController {
         //генерация jwt, упаковка в headers
         String jwt = jwtUtil.generateToken(authenticatedUser);
 
+        UserDto userDto = new UserDto();
+        userDto.setId(authenticatedUser.getId());
+        userDto.setDiskSpace(authenticatedUser.getDiskSpace());
+        userDto.setEmail(authenticatedUser.getEmail());
+        userDto.setUsedSpace(authenticatedUser.getUsedSpace());
+        userDto.setAvatar(authenticatedUser.getAvatar());
+
+
         return ResponseEntity
                 .ok()
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + jwt)
-                .body(authenticatedUser);
+                .body(userDto);
     }
+
+    @GetMapping("/login")
+    public ResponseEntity<?> loginByToken(HttpServletRequest request) {
+        String authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+        String jwt = authorizationHeader.replace("Bearer ", "");
+
+        if (jwtUtil.isTokenValid(jwt)) {
+            String email = jwtUtil.getEmailFromToken(jwt);
+
+            Optional<User> user = userService.findByEmail(email);
+
+            if (user.isPresent()) {
+
+                User u = user.get();
+
+                String updatedJwt = jwtUtil.generateToken(u);
+
+                UserDto userDto = new UserDto();
+                userDto.setId(u.getId());
+                userDto.setDiskSpace(u.getDiskSpace());
+                userDto.setEmail(u.getEmail());
+                userDto.setUsedSpace(u.getUsedSpace());
+                userDto.setAvatar(u.getAvatar());
+
+                return ResponseEntity
+                        .ok()
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + updatedJwt)
+                        .body(userDto);
+            }
+        }
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    }
+
 }

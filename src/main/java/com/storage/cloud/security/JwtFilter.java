@@ -2,6 +2,7 @@ package com.storage.cloud.security;
 
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -18,6 +19,10 @@ public class JwtFilter extends OncePerRequestFilter {
 
     @Override
     public void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws IOException, ServletException {
+
+        if (request.getMethod().equals(HttpMethod.OPTIONS.toString())) {
+            filterChain.doFilter(request, response);
+        }
 
         String authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
 

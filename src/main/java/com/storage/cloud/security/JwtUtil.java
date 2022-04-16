@@ -35,4 +35,9 @@ public class JwtUtil {
         }
         return true;
     }
+
+    public String getEmailFromToken(String jwt) {
+        return Jwts.parser().setSigningKey(secret).parseClaimsJws(jwt).getBody().getSubject();
+    }
+
 }
