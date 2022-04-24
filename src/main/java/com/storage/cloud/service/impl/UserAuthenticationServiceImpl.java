@@ -32,8 +32,8 @@ public class UserAuthenticationServiceImpl implements UserAuthenticationService 
     }
 
     @Override
-    public User authenticate(User user, UserAuthDto userAuthDto) {
-        if (passwordEncoder.matches(userAuthDto.getPassword(), user.getPassword())) {
+    public User authenticate(User user, String password) {
+        if (passwordEncoder.matches(password, user.getPassword())) {
             return user;
         } else {
             return null;

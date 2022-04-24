@@ -6,6 +6,6 @@ import com.storage.cloud.dto.UserAuthDto;
 public interface UserAuthenticationService {
     User registration(UserAuthDto userData);
 
-    User authenticate(User user, UserAuthDto userAuthDto);
+    User authenticate(User user, String password);
 
 }

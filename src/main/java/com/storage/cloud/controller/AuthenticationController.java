@@ -3,6 +3,7 @@ package com.storage.cloud.controller;
 import com.storage.cloud.domain.User;
 import com.storage.cloud.dto.UserAuthDto;
 import com.storage.cloud.dto.UserDto;
+import com.storage.cloud.mapper.UserMapper;
 import com.storage.cloud.security.JwtUtil;
 import com.storage.cloud.service.UserAuthenticationService;
 import com.storage.cloud.service.UserService;
@@ -31,6 +32,8 @@ public class AuthenticationController {
 
     private UserAuthenticationService userAuthenticationService;
 
+    private UserMapper userMapper;
+
     private JwtUtil jwtUtil;
 
     @PostMapping("/registration")
@@ -52,27 +55,7 @@ public class AuthenticationController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody UserAuthDto authData) {
-
-        Optional<User> candidate = userService.findByEmail(authData.getEmail());
-
-        User authenticatedUser = candidate.map(user -> userAuthenticationService.authenticate(user, authData))
-                .orElseThrow(()-> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid login or password"));
-
-        //генерация jwt, упаковка в headers
-        String jwt = jwtUtil.generateToken(authenticatedUser);
-
-        UserDto userDto = new UserDto();
-        userDto.setId(authenticatedUser.getId());
-        userDto.setDiskSpace(authenticatedUser.getDiskSpace());
-        userDto.setEmail(authenticatedUser.getEmail());
-        userDto.setUsedSpace(authenticatedUser.getUsedSpace());
-        userDto.setAvatar(authenticatedUser.getAvatar());
-
-
-        return ResponseEntity
-                .ok()
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + jwt)
-                .body(userDto);
+        return baseLogin(authData.getEmail(), authData.getPassword());
     }
 
     @GetMapping("/login")
@@ -82,30 +65,29 @@ public class AuthenticationController {
 
         if (jwtUtil.isTokenValid(jwt)) {
             String email = jwtUtil.getEmailFromToken(jwt);
+            String password = jwtUtil.getPasswordFromToken(jwt);
 
-            Optional<User> user = userService.findByEmail(email);
-
-            if (user.isPresent()) {
-
-                User u = user.get();
-
-                String updatedJwt = jwtUtil.generateToken(u);
-
-                UserDto userDto = new UserDto();
-                userDto.setId(u.getId());
-                userDto.setDiskSpace(u.getDiskSpace());
-                userDto.setEmail(u.getEmail());
-                userDto.setUsedSpace(u.getUsedSpace());
-                userDto.setAvatar(u.getAvatar());
-
-                return ResponseEntity
-                        .ok()
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + updatedJwt)
-                        .body(userDto);
-            }
+            return baseLogin(email, password);
         }
 
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    }
+
+    private ResponseEntity<?> baseLogin(String email, String password) {
+        Optional<User> candidate = userService.findByEmail(email);
+
+        User authenticatedUser = candidate.map(user -> userAuthenticationService.authenticate(user, password))
+                .orElseThrow(()-> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid login or password"));
+
+        //генерация jwt, упаковка в headers
+        String jwt = jwtUtil.generateToken(authenticatedUser);
+
+        UserDto userDto = userMapper.getDto(authenticatedUser);
+
+        return ResponseEntity
+                .ok()
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + jwt)
+                .body(userDto);
     }
 
 }

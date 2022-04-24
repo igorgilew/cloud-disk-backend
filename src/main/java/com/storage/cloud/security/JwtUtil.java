@@ -19,7 +19,7 @@ public class JwtUtil {
 
     public String generateToken(User user) {
         return Jwts.builder()
-                .setSubject(user.getEmail())
+                .setSubject(user.getEmail() + "%" + user.getPassword())
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(new Date().getTime() + expirationTimeMs))
                 .signWith(SignatureAlgorithm.HS512, secret)
@@ -37,7 +37,10 @@ public class JwtUtil {
     }
 
     public String getEmailFromToken(String jwt) {
-        return Jwts.parser().setSigningKey(secret).parseClaimsJws(jwt).getBody().getSubject();
+        return Jwts.parser().setSigningKey(secret).parseClaimsJws(jwt).getBody().getSubject().split("%")[0];
     }
 
+    public String getPasswordFromToken(String jwt) {
+        return Jwts.parser().setSigningKey(secret).parseClaimsJws(jwt).getBody().getSubject().split("%")[1];
+    }
 }
